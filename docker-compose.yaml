@@ -14,8 +14,6 @@ services:
       - --entrypoints.http.address=:80
       - --entrypoints.https.address=:443
       - --entrypoints.vite.address=:5173
-      - --entrypoints.mailhog.address=:8025
-      - --entrypoints.minio.address=:9000 
       - --api.dashboard=true
       - --certificatesresolvers.letsencrypt.acme.httpchallenge=true
       - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=http
@@ -27,10 +25,6 @@ services:
       - "3306:3306"
       - "5173:5173"
       - "6379:6379"
-      - "8080:8080"
-      - "8025:8025"
-      - "9000:9000"
-      - "9001:9001"  
     volumes:
       - ./data/letsencrypt:/letsencrypt
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
