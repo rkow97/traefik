@@ -1,34 +1,66 @@
-version: "3.5"
+version: "3.7"
 
 services:
 
   traefik:
-    image: "traefik:v2.8"
+    image: "traefik:v2.9"
     container_name: "traefik"
     command:
-      - "--api.insecure=true"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--entrypoints.web.address=:80"
-      - "--entrypoints.web-vite.address=:5173"
+      - --log.level=DEBUG
+      - --api.insecure=true
+      - --api=true
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.http.address=:80
+      - --entrypoints.https.address=:443
+      - --entrypoints.vite.address=:5173
+      - --entrypoints.mailhog.address=:8025
+      - --entrypoints.minio.address=:9000 
+      - --api.dashboard=true
+      - --certificatesresolvers.letsencrypt.acme.httpchallenge=true
+      - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=http
+      - --certificatesresolvers.letsencrypt.acme.email=${EMAIL}
+      - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
     ports:
       - "80:80"
-      - "8080:8080"
+      - "443:443"
       - "3306:3306"
       - "5173:5173"
       - "6379:6379"
+      - "8080:8080"
+      - "8025:8025"
+      - "9000:9000"
+      - "9001:9001"  
     volumes:
+      - ./data/letsencrypt:/letsencrypt
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
     networks:
       - proxy
-
+    labels:
+#      - "traefik.http.routers.traefik.rule=Host(`traefik.localhost`, `traefik.rkow.cz`)"
+      - "traefik.enable=true"
+#      - "traefik.http.routers.traefik.entrypoints=http"
+#      - "traefik.http.routers.traefik.service=api@internal"
+      - traefik.http.routers.to-https.rule=HostRegexp(`{host:.+}`)
+      - traefik.http.routers.to-https.entrypoints=http
+      - traefik.http.routers.to-https.middlewares=to-https
+      - traefik.http.routers.traefik.rule=Host(`${DOMAIN}`, `traefik.${DOMAIN}`)
+      - traefik.http.routers.traefik.entrypoints=https
+      - traefik.http.routers.traefik.middlewares=auth
+      - traefik.http.routers.traefik.service=api@internal
+      - traefik.http.routers.traefik.tls=true
+      - traefik.http.routers.traefik.tls.certresolver=${CERT_RESOLVER}
+      - traefik.http.middlewares.to-https.redirectscheme.scheme=https
+      - traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_USER}:${TRAEFIK_PASSWORD_HASH}
   whoami:
     image: "traefik/whoami"
     container_name: "simple-service"
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.whoami.rule=Host(`whoami.localhost`)"
-      - "traefik.http.routers.whoami.entrypoints=web"
+      - traefik.enable=true
+      - traefik.http.routers.https.rule=Host(`whoami.${DOMAIN}`)
+      - traefik.http.routers.https.entrypoints=https
+      - traefik.http.routers.https.tls=true
+      - traefik.http.routers.https.tls.certresolver=${CERT_RESOLVER}
     networks:
       - proxy
 
