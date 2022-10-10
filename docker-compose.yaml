@@ -6,7 +6,7 @@ services:
     image: "traefik:v2.9"
     container_name: "traefik"
     command:
-      - --log.level=DEBUG
+      #      - --log.level=DEBUG
       - --api.insecure=true
       - --api=true
       - --providers.docker=true
@@ -24,6 +24,7 @@ services:
       - "443:443"
       - "3306:3306"
       - "5173:5173"
+      - "8000:8000"
       - "6379:6379"
     volumes:
       - ./data/letsencrypt:/letsencrypt
@@ -35,8 +36,12 @@ services:
       - "traefik.enable=true"
 #      - "traefik.http.routers.traefik.entrypoints=http"
 #      - "traefik.http.routers.traefik.service=api@internal"
+#      - "traefik.http.middlewares.to-https.headers.accesscontrolallowmethods=GET,OPTIONS,PUT"
+        #      - "traefik.http.middlewares.to-https.headers.accesscontrolalloworigin=*"
+        #      - "traefik.http.middlewares.to-https.headers.accesscontrolmaxage=100"
+        #      - "traefik.http.middlewares.to-https.headers.addvaryheader=true"
       - traefik.http.routers.to-https.rule=HostRegexp(`{host:.+}`)
-      - traefik.http.routers.to-https.entrypoints=http
+      - traefik.http.routers.to-https.entrypoints=http,vite
       - traefik.http.routers.to-https.middlewares=to-https
       - traefik.http.routers.traefik.rule=Host(`${DOMAIN}`, `traefik.${DOMAIN}`)
       - traefik.http.routers.traefik.entrypoints=https
